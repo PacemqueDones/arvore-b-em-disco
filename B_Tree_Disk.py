@@ -15,9 +15,12 @@ class BTree:
         else:
 
 
-    def head(self):
+    def write_head(self):
         bin_head = struct.pack("iii", self.t, self.idx, self.raiz.idx)
         self.f.write(bin_head)
+
+    def read_head(self):
+
 
     def busca(self, chave: int, node = None):
         node = self.raiz if node == None else node
