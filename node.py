@@ -1,9 +1,72 @@
-import math
+import struct
 
 class Node:
-    def __init__(self, folha=False):
-        self.chaves =  []
-        self.filhos = []
-        self.registros = []
+    def __init__(self, folha=False, idx=None):
+        self.idx = idx
+        self.chaves = []  # list[int]
+        self.filhos = []  # list[int] posições no arquivo (ou -1)
+        self.registros = []  # list[int]
         self.folha = folha
-        self.n = 0
+
+        idx += 1 # é um ponteiro para o atributo self.idx da árvore
+
+    @property
+    def n(self):
+        return len(self.chaves)
+
+    def to_bytes(self, t: int) -> bytes:
+        max_chaves = 2 * t - 1
+        max_filhos = 2 * t
+
+        keys = self.chaves + [-1] * (max_chaves - self.n)
+        registros = self.registros + [-1] * (max_chaves - self.n)
+
+        if self.folha:
+            children = [-1] * max_filhos
+        else:
+            children = self.filhos + [-1] * (max_filhos - len(self.filhos))
+
+        fmt = f"?i{max_chaves}i{max_chaves}i{max_filhos}i"
+        return struct.pack(fmt, self.folha, self.n, *keys, *registros, *children)
+
+    @classmethod
+    def from_bytes(cls, t: int, data: bytes):
+        max_chaves = 2 * t - 1
+        max_filhos = 2 * t
+        fmt = f"?i{max_chaves}i{max_chaves}i{max_filhos}i"
+
+        descompactado = struct.unpack(fmt, data)
+
+        print("descompactado (tupla completa):")
+        print(descompactado)
+        print()
+
+        folha = descompactado[0]
+        n = descompactado[1]
+
+        inicio_chaves = 2
+        fim_chaves = inicio_chaves + max_chaves
+        registros_end = fim_chaves + max_chaves
+        children_end = registros_end + max_filhos
+
+        keys = list(descompactado[inicio_chaves:fim_chaves])[:n]
+        registros = list(descompactado[fim_chaves:registros_end])[:n]
+        filhos_brutos = list(descompactado[registros_end:children_end])
+
+        node = cls(t=t, folha=folha)
+        node.chaves = keys
+        node.registros = registros
+        node.filhos = [] if folha else filhos_brutos[:n + 1]
+
+        print("TREATED (tupla completa):")
+        print(keys, registros, node.filhos)
+        print()
+
+        return node
+
+    @classmethod
+    def byte_size(cls, t: int) -> int:
+        max_chaves = 2 * t - 1
+        max_filhos = 2 * t
+        fmt = f"?i{max_chaves}i{max_chaves}i{max_filhos}i"
+        return struct.calcsize(fmt)

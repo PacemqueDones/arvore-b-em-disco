@@ -14,6 +14,7 @@ class BTree:
         self.raiz = Node(True)
         self.t = t
         self.num_nos = 1
+        self.i = 0
 
     def busca(self, chave: int, node = None):
         node = self.raiz if node == None else node
@@ -42,6 +43,7 @@ class BTree:
         # cria um novo nó.
         z = Node(y.folha)
         self.num_nos += 1
+        self.i += 1
 
         # o novo nó agora é filho de pai
         pai.filhos.insert(indice + 1, z)
@@ -72,6 +74,7 @@ class BTree:
         if raiz.n == (2 * t) - 1:
             nova_raiz = Node()
             self.num_nos += 1
+            self.i += 1
             self.raiz = nova_raiz
             nova_raiz.filhos.insert(0, raiz)
             self.split(nova_raiz, 0)
@@ -203,6 +206,7 @@ class BTree:
             node.registros.pop(i)
             node.filhos.pop(j)
             self.num_nos -= 1
+            self.i -= 1
         else:
             lsnode = node.filhos[j]
             lsnode.chaves.append(node.chaves[j])
@@ -218,10 +222,12 @@ class BTree:
             node.registros.pop(i)
             node.filhos.pop(i)
             self.num_nos -= 1
+            self.i -= 1
 
         if node == self.raiz and node.n == 0:
             self.raiz = novo
             self.num_nos -= 1
+            self.i -= 1
 
     def delete_sibling(self, node, i, j):
         cnode = node.filhos[i]
