@@ -10,17 +10,37 @@ class BTree:
         self.f = open(path, mode)
 
         if create:
-            self.idx = 0
-            self.raiz = Node(True, self.idx)
+            self.raiz = Node(True, 0)
+            self.idx = 1
         else:
+            t, idx, raiz_idx = self.read_head()
+            raiz = self.read_node(raiz_idx)
 
+            self.t = t
+            self.idx = idx
+            self.raiz = raiz
+
+
+    def head_size(self) -> int:
+        fmt = "iii"
+        return struct.calcsize(fmt)
 
     def write_head(self):
+        self.f.seek(0)
         bin_head = struct.pack("iii", self.t, self.idx, self.raiz.idx)
         self.f.write(bin_head)
 
     def read_head(self):
+        size = self.head_size()
+        head = self.f.read(size)
+        t, idx, raiz_idx = head
+        return t, idx, raiz_idx
 
+    def read_head(self):
+        self.f.seek(0)
+        head = self.f.read(self.head_size())
+        t, idx, raiz_idx = struct.unpack("iii", head)
+        return t, idx, raiz_idx
 
     def busca(self, chave: int, node = None):
         node = self.raiz if node == None else node

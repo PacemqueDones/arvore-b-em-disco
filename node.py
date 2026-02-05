@@ -8,8 +8,6 @@ class Node:
         self.registros = []  # list[int]
         self.folha = folha
 
-        idx += 1 # é um ponteiro para o atributo self.idx da árvore
-
     @property
     def n(self):
         return len(self.chaves)
