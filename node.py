@@ -12,9 +12,9 @@ class Node:
     def n(self):
         return len(self.chaves)
 
-    def to_bytes(self, t: int) -> bytes:
-        max_chaves = 2 * t - 1
-        max_filhos = 2 * t
+    def to_bytes(self, d: int) -> bytes:
+        max_chaves = d - 1
+        max_filhos = d
 
         chaves = self.chaves + [-1] * (max_chaves - self.n)
         registros = self.registros + [-1] * (max_chaves - self.n)
@@ -28,9 +28,9 @@ class Node:
         return struct.pack(fmt, self.folha, self.n, self.idx, *chaves, *registros, *filhos)
 
     @classmethod
-    def from_bytes(cls, t: int, data: bytes):
-        max_chaves = 2 * t - 1
-        max_filhos = 2 * t
+    def from_bytes(cls, d: int, data: bytes):
+        max_chaves = d - 1
+        max_filhos = d
         fmt = f"?ii{max_chaves}i{max_chaves}i{max_filhos}i"
 
         descompactado = struct.unpack(fmt, data)
@@ -56,8 +56,8 @@ class Node:
         return node
 
     @classmethod
-    def byte_size(cls, t: int) -> int:
-        max_chaves = 2 * t - 1
-        max_filhos = 2 * t
+    def byte_size(cls, d: int) -> int:
+        max_chaves = d - 1
+        max_filhos = d
         fmt = fmt = f"?ii{max_chaves}i{max_chaves}i{max_filhos}i"
         return struct.calcsize(fmt)

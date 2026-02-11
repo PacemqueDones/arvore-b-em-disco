@@ -35,15 +35,20 @@ def executar_operacoes(f, arvore):
 
         if op == "I":
             chave, dado = args
-            arvore.inserir(chave, dado)
+            arvore.insert(chave, dado)
 
         elif op == "R":
             (chave,) = args
-            arvore.remover(chave)
+            arvore.delete(chave)
 
         elif op == "B":
             (chave,) = args
-            arvore.buscar(chave)
+            res = arvore.search(chave)
+            if res is None:
+                print(f'O REGISTRO NAO ESTA NA ARVORE!')
+            else:
+                node, i = res
+                print(f'O REGISTRO {node.registros[i]} ESTA NA ARVORE!')
 
         operacoes_lidas += 1
         if operacoes_lidas == n:

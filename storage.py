@@ -14,23 +14,23 @@ class Storage:
     def head_size(self):
         return struct.calcsize(self.HEAD_FMT)
 
-    def write_head(self, t: int, next_idx: int, root_idx: int):
+    def write_head(self, d: int, next_idx: int, root_idx: int):
         self.f.seek(0)
-        self.f.write(struct.pack(self.HEAD_FMT, t, next_idx, root_idx))
+        self.f.write(struct.pack(self.HEAD_FMT, d, next_idx, root_idx))
 
     def read_head(self):
         self.f.seek(0)
         data = self.f.read(self.head_size())
         return struct.unpack(self.HEAD_FMT, data)
 
-    def node_offset(self, t: int, idx: int):
-        return self.head_size() + idx * Node.byte_size(t)
+    def node_offset(self, d: int, idx: int):
+        return self.head_size() + idx * Node.byte_size(d)
 
     def read_node(self, t: int, idx: int):
         self.f.seek(self.node_offset(t, idx))
         data = self.f.read(Node.byte_size(t))
         return Node.from_bytes(t, data)
 
-    def write_node(self, t: int, node):
-        self.f.seek(self.node_offset(t, node.idx))
-        self.f.write(node.to_bytes(t))
+    def write_node(self, d: int, node):
+        self.f.seek(self.node_offset(d, node.idx))
+        self.f.write(node.to_bytes(d))
