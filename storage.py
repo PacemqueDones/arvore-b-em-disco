@@ -26,10 +26,10 @@ class Storage:
     def node_offset(self, d: int, idx: int):
         return self.head_size() + idx * Node.byte_size(d)
 
-    def read_node(self, t: int, idx: int):
-        self.f.seek(self.node_offset(t, idx))
-        data = self.f.read(Node.byte_size(t))
-        return Node.from_bytes(t, data)
+    def read_node(self, d: int, idx: int):
+        self.f.seek(self.node_offset(d, idx))
+        data = self.f.read(Node.byte_size(d))
+        return Node.from_bytes(d, data)
 
     def write_node(self, d: int, node):
         self.f.seek(self.node_offset(d, node.idx))
