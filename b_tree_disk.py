@@ -18,6 +18,12 @@ class BTree:
             self.t, self.idx, self.raiz_idx = self.storage.read_head()
             #self.raiz = self.storage.read_node(self.t, self.raiz_idx)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.storage.close()
+        return False
 
     def search(self, chave: int, idx = None):
         node_idx = self.raiz_idx if idx is None else idx
