@@ -5,7 +5,7 @@ from math import ceil
 
 class BTree:
     def __init__(self, path: str, d: int, create: bool):
-        self.t = ceil(d)
+        self.t = ceil(d/2)
         self.d = d
         self.storage = Storage(path, create=create)  # storage abre o arquivo
 
@@ -14,17 +14,23 @@ class BTree:
             self.idx = 1                      # próximo índice livre
 
             raiz = Node(True, idx=self.raiz_idx)
-            self.storage.write_node(self.t, raiz)
-            self.storage.write_head(self.t, self.idx, self.raiz_idx)
+            self.storage.write_node(self.d, raiz)
+            self.storage.write_head(self.d, self.idx, self.raiz_idx)
 
         else:
-            self.t, self.idx, self.raiz_idx = self.storage.read_head()
-            #self.raiz = self.storage.read_node(self.t, self.raiz_idx)
+            self.d, self.idx, self.raiz_idx = self.storage.read_head()
+            self.t = ceil(self.d / 2)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.storage.close()
+        return False
 
     def search(self, chave: int, idx = None):
         node_idx = self.raiz_idx if idx is None else idx
-        node = self.storage.read_node(self.t, node_idx)
+        node = self.storage.read_node(self.d, node_idx)
 
         i = 0
         while i < node.n and chave > node.chaves[i]:
@@ -43,11 +49,12 @@ class BTree:
 
     def split(self, pai_idx: int, indice: int):
         t = self.t
+        d = self.d
 
         # y é um filho de pai, mas um filho cheio de chaves
-        pai = self.storage.read_node(t, pai_idx)
+        pai = self.storage.read_node(d, pai_idx)
         y_idx = pai.filhos[indice]
-        y = self.storage.read_node(t, y_idx)
+        y = self.storage.read_node(d, y_idx)
 
         # cria um novo nó.
         z = Node(y.folha, self.idx)
@@ -61,8 +68,8 @@ class BTree:
         pai.registros.insert(indice, y.registros[t - 1])
 
         # direita recebe parte alta
-        z.chaves = y.chaves[t: (2 * t) - 1]
-        z.registros = y.registros[t:(2 * t) - 1]
+        z.chaves = y.chaves[t: d - 1]
+        z.registros = y.registros[t:d - 1]
 
         # esquerda fica com parte baixa
         y.chaves = y.chaves[0: t - 1]
@@ -70,12 +77,12 @@ class BTree:
 
         # se y não é folha, reatribuimos os filhos de y em y e z
         if not y.folha:
-            z.filhos = y.filhos[t: 2 * t]
+            z.filhos = y.filhos[t: d]
             y.filhos = y.filhos[0: t]
 
-        self.storage.write_node(t, pai)
-        self.storage.write_node(t, y)
-        self.storage.write_node(t, z)
+        self.storage.write_node(d, pai)
+        self.storage.write_node(d, y)
+        self.storage.write_node(d, z)
 
     def insert(self, k: int, valor: int):
         t = self.t

@@ -6,8 +6,8 @@ caminho = "casos_teste/caso_teste_4.txt"
 d, f = ler_cabecalho(caminho)
 print(f'grau: d')
 try:
-    arvore = BTree(path = 'teste.txt', t = int(d/2), create=True)
-    executar_operacoes(f, arvore)
+    with BTree(path="teste.bin", d=d, create=True) as arvore:
+        executar_operacoes(f, arvore)
 finally:
     f.close()
 
