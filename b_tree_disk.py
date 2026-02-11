@@ -1,5 +1,6 @@
 from node import Node
 from storage import Storage
+from collections import deque
 
 class BTree:
     def __init__(self, path: str, t: int, create: bool):
@@ -419,3 +420,33 @@ class BTree:
         if not node.folha:
             for child_idx in node.filhos:
                 self.print_tree(child_idx, level + 1)
+
+    def print_tree_levels(self, root_idx: int):
+        def _fmt_node(node) -> str:
+            return "[" + ", ".join('key: ' + str(k) for k in node.chaves) + "]"
+
+        t = self.t
+        q = deque([(root_idx, 0)])
+
+        current_level = 0
+        line_parts = []
+
+        while q:
+            node_idx, level = q.popleft()
+            node = self.storage.read_node(t, node_idx)
+
+            # quando muda o nível, imprime a linha anterior
+            if level != current_level:
+                print(" ".join(line_parts))
+                line_parts = []
+                current_level = level
+
+            line_parts.append(_fmt_node(node))
+
+            if not node.folha:
+                for child_idx in node.filhos:
+                    q.append((child_idx, level + 1))
+
+        # imprime a última linha acumulada
+        if line_parts:
+            print(" ".join(line_parts))
