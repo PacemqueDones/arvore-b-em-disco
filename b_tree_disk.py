@@ -1,21 +1,19 @@
 from node import Node
 from storage import Storage
 from collections import deque
-<<<<<<< Updated upstream
-from math import ceil
-=======
 from pathlib import Path
->>>>>>> Stashed changes
 
 class BTree:
     def __init__(self, path: str, t: int, create: bool):
         self.t = t
         
-        bin = Path(path).stem + '.bin'
-        txt = Path(path).stem + '.txt'
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        caminho_bin = p.with_suffix('.bin')
+        caminho_txt = p.with_suffix('.txt')
         
-        self.txt = open(txt, "w", encoding="utf-8")
-        self.storage = Storage(bin, create=create)  # storage abre o arquivo
+        self.txt = open(caminho_txt, "w", encoding="utf-8")
+        self.storage = Storage(caminho_bin, create=create)  # storage abre o arquivo
 
         if create:
             self.raiz_idx = 0
@@ -62,7 +60,7 @@ class BTree:
             self.txt.write("O REGISTRO NAO ESTA NA ARVORE!\n")
         else:
             node, i = res
-            self.txt.write(f"O REGISTRO {node.registros[i]} ESTA NA ARVORE!\n")
+            self.txt.write(f"O REGISTRO ESTA NA ARVORE!\n")
 
     def split(self, pai_idx: int, indice: int):
         t = self.t
@@ -460,165 +458,4 @@ class BTree:
 
         # imprime a última linha acumulada
         if line_parts:
-<<<<<<< Updated upstream
-            print(" ".join(line_parts))
-
-class BTree:
-    """
-    B-tree por ORDEM d (máx filhos = d, máx chaves = d-1),
-    inserção BOTTOM-UP (split após inserir).
-    Aceita d par e ímpar respeitando min_children=ceil(d/2).
-    """
-    def __init__(self, path: str, d: int, create: bool):
-        self.d = d
-        self.max_keys = d - 1
-        self.min_children = ceil(d / 2)
-        self.min_keys = self.min_children - 1
-        self.storage = Storage(path, create=create)  # storage abre o arquivo
-
-        if create:
-            self.raiz_idx = 0
-            self.idx = 1                      # próximo índice livre
-
-            raiz = Node(True, idx=self.raiz_idx)
-            self.storage.write_node(self.t, raiz)
-            self.storage.write_head(self.t, self.idx, self.raiz_idx)
-
-        else:
-            self.t, self.idx, self.raiz_idx = self.storage.read_head()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        self.storage.close()
-        return False
-
-    # ---------- Busca ----------
-    def search(self, k: int, idx: int | None = None):
-        node_idx = self.raiz_idx if idx is None else idx
-        x = self.storage.read_node(self.d, node_idx)
-
-        i = 0
-        while i < x.n and k > x.keys[i]:
-            i += 1
-        if i < x.n and k == x.keys[i]:
-            return x, i
-        if x.leaf:
-            return None
-        return self.search(k, x.child[i])
-
-    # ---------- Inserção bottom-up ----------
-    def insert(self, k: int, v: int):
-        """
-        Insere (k,v). Se houver overflow na raiz, cria nova raiz.
-        """
-        promo = self._insert_rec(self.root, k, v)
-
-        # se a raiz gerou promoção, cria nova raiz
-        if promo is not None:
-            pk, pv, right = promo
-            new_root = Node(False)
-            new_root.keys = [pk]
-            new_root.vals = [pv]
-            new_root.child = [self.root, right]
-            self.root = new_root
-
-    def _insert_rec(self, x: Node, k: int, v: int):
-        """
-        Retorna None se não houve split.
-        Se houve split, retorna (promoted_key, promoted_val, right_node).
-        """
-        if x.leaf:
-            self._insert_in_leaf_sorted(x, k, v)
-        else:
-            i = self._find_child_index(x, k)
-            promo = self._insert_rec(x.child[i], k, v)
-            if promo is not None:
-                pk, pv, right = promo
-                self._insert_in_internal_at(x, i, pk, pv, right)
-
-        # após inserir (ou aplicar promoção), verifica overflow
-        if x.n > self.max_keys:          # isto é, x.n == d (pois max_keys=d-1)
-            return self._split_node(x)
-        return None
-
-    def _insert_in_leaf_sorted(self, x: Node, k: int, v: int):
-        i = 0
-        while i < x.n and k > x.keys[i]:
-            i += 1
-        # se você quiser tratar chave duplicada como update:
-        # if i < x.n and x.keys[i] == k: x.vals[i] = v; return
-        x.keys.insert(i, k)
-        x.vals.insert(i, v)
-
-    def _find_child_index(self, x: Node, k: int):
-        i = 0
-        while i < x.n and k > x.keys[i]:
-            i += 1
-        return i
-
-    def _insert_in_internal_at(self, x: Node, i: int, pk: int, pv: int, right: Node):
-        # insere chave promovida na posição i e o filho direito em i+1
-        x.keys.insert(i, pk)
-        x.vals.insert(i, pv)
-        x.child.insert(i + 1, right)
-
-    # ---------- Split bottom-up ----------
-    def _split_node(self, x: Node):
-        """
-        Divide um nó com overflow: x tem d chaves (max_keys+1).
-        Retorna (promoted_key, promoted_val, right_node).
-
-        Para ordem d, usando min_children = ceil(d/2):
-        - promovida é a chave na posição min_keys (0-index)
-        - esquerda fica com min_keys chaves
-        - direita fica com min_keys chaves
-        """
-        # x.n == d (overflow)
-        assert x.n == self.d
-
-        mid = self.min_keys  # índice promovido
-
-        pk = x.keys[mid]
-        pv = x.vals[mid]
-
-        right = Node(x.leaf)
-
-        # direita recebe chaves após a promovida
-        right.keys = x.keys[mid + 1 :]
-        right.vals = x.vals[mid + 1 :]
-
-        # esquerda (x) fica com as chaves antes da promovida
-        x.keys = x.keys[:mid]
-        x.vals = x.vals[:mid]
-
-        if not x.leaf:
-            # filhos: se x tinha d+1 filhos após overflow,
-            # esquerda fica com mid+1 filhos e direita com o resto
-            right.child = x.child[mid + 1 :]
-            x.child = x.child[: mid + 1]
-
-        return pk, pv, right
-
-    # ---------- Utilitário: impressão por níveis ----------
-    def print_levels(self):
-        from collections import deque
-        q = deque([(self.root, 0)])
-        cur = 0
-        line = []
-        while q:
-            node, lvl = q.popleft()
-            if lvl != cur:
-                print(" ".join(line))
-                line = []
-                cur = lvl
-            line.append("[" + ", ".join(str(k) for k in node.keys) + "]")
-            if not node.leaf:
-                for c in node.child:
-                    q.append((c, lvl + 1))
-        if line:
-            print(" ".join(line))
-=======
             self.txt.write(" ".join(line_parts))
->>>>>>> Stashed changes

@@ -44,12 +44,8 @@ def executar_operacoes(f, arvore):
         elif op == "B":
             (chave,) = args
             res = arvore.search(chave)
-            if res is None:
-                print(f'O REGISTRO NAO ESTA NA ARVORE!')
-            else:
-                node, i = res
-                print(f'O REGISTRO {node.registros[i]} ESTA NA ARVORE!')
 
         operacoes_lidas += 1
         if operacoes_lidas == n:
+            arvore.txt.write('\n')
             break
