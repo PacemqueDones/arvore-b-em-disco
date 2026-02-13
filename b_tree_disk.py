@@ -6,11 +6,19 @@ from pathlib import Path
 class BTree:
     def __init__(self, path: str, t: int, create: bool):
         self.t = t
-        
         p = Path(path)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        caminho_bin = p.with_suffix('.bin')
-        caminho_txt = p.with_suffix('.txt')
+
+        # Caso 1: path contém sufixo
+        if p.suffix:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            caminho_bin = p.with_suffix('.bin')
+            caminho_txt = p.with_suffix('.txt')
+
+        # Caso 2: path não contém sufixo
+        else:
+            p.mkdir(parents=True, exist_ok=True)
+            caminho_bin = p / "resposta.bin"
+            caminho_txt = p / "resposta.txt"
         
         self.txt = open(caminho_txt, "w", encoding="utf-8")
         self.storage = Storage(caminho_bin, create=create)  # storage abre o arquivo
@@ -51,7 +59,7 @@ class BTree:
             return None
 
         else:
-            return self.search(chave, node.filhos[i])
+            return self.search_node(chave, node.filhos[i])
         
     def search(self, chave: int, idx=None):
         res = self.search_node(chave, idx)
@@ -59,8 +67,8 @@ class BTree:
         if res is None:
             self.txt.write("O REGISTRO NAO ESTA NA ARVORE!\n")
         else:
-            node, i = res
             self.txt.write(f"O REGISTRO ESTA NA ARVORE!\n")
+        return res 
 
     def split(self, pai_idx: int, indice: int):
         t = self.t
@@ -100,7 +108,7 @@ class BTree:
 
     def insert(self, k: int, valor: int):
         # evita duplicata: atualiza (ou ignora) se já existe
-        res = self.search(k)
+        res = self.search_node(k)
         if res is not None:
             node, i = res
             node.registros[i] = valor  # "update" do valor
