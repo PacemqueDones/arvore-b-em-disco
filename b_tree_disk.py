@@ -1,12 +1,21 @@
 from node import Node
 from storage import Storage
 from collections import deque
+<<<<<<< Updated upstream
 from math import ceil
+=======
+from pathlib import Path
+>>>>>>> Stashed changes
 
 class BTree:
     def __init__(self, path: str, t: int, create: bool):
         self.t = t
-        self.storage = Storage(path, create=create)  # storage abre o arquivo
+        
+        bin = Path(path).stem + '.bin'
+        txt = Path(path).stem + '.txt'
+        
+        self.txt = open(txt, "w", encoding="utf-8")
+        self.storage = Storage(bin, create=create)  # storage abre o arquivo
 
         if create:
             self.raiz_idx = 0
@@ -24,9 +33,10 @@ class BTree:
 
     def __exit__(self, exc_type, exc, tb):
         self.storage.close()
+        self.txt.close()
         return False
 
-    def search(self, chave: int, idx = None):
+    def search_node(self, chave: int, idx = None):
         node_idx = self.raiz_idx if idx is None else idx
         node = self.storage.read_node(self.t, node_idx)
 
@@ -44,6 +54,15 @@ class BTree:
 
         else:
             return self.search(chave, node.filhos[i])
+        
+    def search(self, chave: int, idx=None):
+        res = self.search_node(chave, idx)
+
+        if res is None:
+            self.txt.write("O REGISTRO NAO ESTA NA ARVORE!\n")
+        else:
+            node, i = res
+            self.txt.write(f"O REGISTRO {node.registros[i]} ESTA NA ARVORE!\n")
 
     def split(self, pai_idx: int, indice: int):
         t = self.t
@@ -82,6 +101,14 @@ class BTree:
         self.storage.write_node(t, z)
 
     def insert(self, k: int, valor: int):
+        # evita duplicata: atualiza (ou ignora) se já existe
+        res = self.search(k)
+        if res is not None:
+            node, i = res
+            node.registros[i] = valor  # "update" do valor
+            self.storage.write_node(self.t, node)
+            return
+
         t = self.t
         raiz = self.storage.read_node(self.t, self.raiz_idx)
 
@@ -405,22 +432,6 @@ class BTree:
         node, i = res
         return node.registros[i]
 
-    def close(self):
-        self.storage.close()
-
-    def print_tree(self, node_idx: int, level=0):
-        t = self.t
-        node = self.storage.read_node(t, node_idx)
-
-        print(f'Level {level}', end=": ")
-        for k in node.chaves:
-            print(k, end=" ")
-        print()
-
-        if not node.folha:
-            for child_idx in node.filhos:
-                self.print_tree(child_idx, level + 1)
-
     def print_tree_levels(self, root_idx: int):
         def _fmt_node(node) -> str:
             return "[" + ", ".join('key: ' + str(k) for k in node.chaves) + "]"
@@ -437,7 +448,7 @@ class BTree:
 
             # quando muda o nível, imprime a linha anterior
             if level != current_level:
-                print(" ".join(line_parts))
+                self.txt.write(" ".join(line_parts) + "\n")
                 line_parts = []
                 current_level = level
 
@@ -449,6 +460,7 @@ class BTree:
 
         # imprime a última linha acumulada
         if line_parts:
+<<<<<<< Updated upstream
             print(" ".join(line_parts))
 
 class BTree:
@@ -607,3 +619,6 @@ class BTree:
                     q.append((c, lvl + 1))
         if line:
             print(" ".join(line))
+=======
+            self.txt.write(" ".join(line_parts))
+>>>>>>> Stashed changes
