@@ -1,25 +1,39 @@
+# Nome: Anderson Lucas de Paula
+# Matrícula: 2025130753
+
 from node import Node
 from storage import Storage
 from collections import deque
-from pathlib import Path
+from utils import preparar_caminhos
+
+"""
+Observação importante:
+
+Esta implementação segue o modelo por grau mínimo (t).
+Portanto, o número máximo de filhos por nó é sempre 2t (par).
+O parâmetro d do arquivo de entrada é convertido para t = d//2.
+"""
 
 class BTree:
     def __init__(self, path: str, t: int, create: bool):
+        """
+        Implementação de uma B-tree persistida em disco.
+
+        Modelo utilizado:
+            - Grau mínimo: t
+            - Máximo de chaves por nó: 2t - 1
+            - Máximo de filhos por nó: 2t
+            - Mínimo de chaves (exceto raiz): t - 1
+            - Mínimo de filhos (exceto raiz): t
+
+        Invariantes:
+            1. As chaves em cada nó são crescentes.
+            2. Para um nó com n chaves existem n+1 filhos (se não for folha).
+            3. A árvore é split top-down.
+        """
         self.t = t
-        p = Path(path)
-
-        # Caso 1: path contém sufixo
-        if p.suffix:
-            p.parent.mkdir(parents=True, exist_ok=True)
-            caminho_bin = p.with_suffix('.bin')
-            caminho_txt = p.with_suffix('.txt')
-
-        # Caso 2: path não contém sufixo
-        else:
-            p.mkdir(parents=True, exist_ok=True)
-            caminho_bin = p / "resposta.bin"
-            caminho_txt = p / "resposta.txt"
-        
+    
+        caminho_bin, caminho_txt = preparar_caminhos(path)        
         self.txt = open(caminho_txt, "w", encoding="utf-8")
         self.storage = Storage(caminho_bin, create=create)  # storage abre o arquivo
 
@@ -43,6 +57,17 @@ class BTree:
         return False
 
     def search_node(self, chave: int, idx = None):
+        """
+        Busca recursiva ena árvore-B.
+
+        Retorna:
+            (node, i) se chave encontrada
+            None caso contrário
+
+        Observação:
+            A busca desce para o filho i tal que:
+                chaves[i-1] < chave < chaves[i]
+        """
         node_idx = self.raiz_idx if idx is None else idx
         node = self.storage.read_node(self.t, node_idx)
 
@@ -71,6 +96,16 @@ class BTree:
         return res 
 
     def split(self, pai_idx: int, indice: int):
+        """
+        Divide o filho cheio y = pai.filhos[indice].
+
+        Estratégia:
+            - y possui 2t - 1 chaves (nó cheio).
+            - A chave mediana (posição t-1) sobe para o pai.
+            - As t-1 menores permanecem em y.
+            - As t-1 maiores vão para novo nó z.
+            - Se não for folha, redistribui também os filhos.
+        """
         t = self.t
 
         # y é um filho de pai, mas um filho cheio de chaves
@@ -107,6 +142,14 @@ class BTree:
         self.storage.write_node(t, z)
 
     def insert(self, k: int, valor: int):
+        """
+        Inserção em B-tree com estratégia top-down.
+
+        Estratégia:
+            - Antes de descer, garante que o nó filho não esteja cheio.
+            - Se raiz estiver cheia, cria nova raiz e faz split.
+            - Nunca desce para um nó cheio.
+        """
         # evita duplicata: atualiza (ou ignora) se já existe
         res = self.search_node(k)
         if res is not None:
@@ -133,6 +176,13 @@ class BTree:
         self.storage.write_head(self.t, self.idx, self.raiz_idx)
 
     def insert_non_full(self, node_idx: int, k: int, valor:int):
+        """
+        Insere chave em nó garantidamente não cheio.
+
+        Caso 1: nó folha -> insere ordenadamente.
+        Caso 2: nó interno -> desce para filho apropriado,
+                fazendo split se necessário antes da descida.
+        """
         t = self.t
         node = self.storage.read_node(t, node_idx)
         i = node.n - 1
@@ -148,8 +198,8 @@ class BTree:
             node.registros[i + 1] = valor
 
             self.storage.write_node(t, node)
-
             return
+        
         # se não é folha
         else:
             while i >= 0 and k < node.chaves[i]:
@@ -165,9 +215,21 @@ class BTree:
             self.insert_non_full(node.filhos[i], k, valor)
 
     def delete(self, chave: int):
+        """
+        Interface pública de remoção.
+
+        Delegada para _delete_recursive iniciando na raiz.
+        """
         self._delete_recursive(self.raiz_idx, chave)
 
     def _delete_recursive(self, node_idx: int, k: int):
+        """
+        Remoção em B-tree.
+
+        Invariante mantida:
+            Ao descer na árvore, garante-se que o filho tenha
+            pelo menos t chaves (exceto raiz).
+        """
         t = self.t
         node = self.storage.read_node(t, node_idx)
 
@@ -229,6 +291,25 @@ class BTree:
             return self._delete_recursive(node.filhos[i - 1], k)
 
     def delete_internal_node(self, node_idx: int, k: int, i: int):
+        """
+        Remove chave localizada em nó interno.
+
+        Estratégia da B-tree:
+
+        Caso 1:
+            Filho esquerdo possui pelo menos t chaves ->
+            substitui pela predecessora.
+
+        Caso 2:
+            Filho direito possui pelo menos t chaves ->
+            substitui pela sucessora.
+
+        Caso 3:
+            Ambos possuem t-1 chaves ->
+            realiza merge e continua remoção recursivamente.
+
+        Garante preservação das invariantes estruturais.
+        """
         t = self.t
         node = self.storage.read_node(t, node_idx)
 
@@ -270,6 +351,16 @@ class BTree:
         return self.delete_internal_node(merged_idx, k, t - 1)
 
     def delete_predecessor(self, node_idx: int):
+        """
+        Retorna e remove a maior chave da subárvore.
+
+        Processo:
+            - Desce sempre pelo filho mais à direita.
+            - Antes de descer, garante que o filho tenha ≥ t chaves.
+            - Se necessário, realiza borrow ou merge.
+
+        Mantém a propriedade de mínimo t-1 chaves por nó.
+        """
         t = self.t
         node = self.storage.read_node(t, node_idx)
 
@@ -310,6 +401,13 @@ class BTree:
         return self.delete_predecessor(child_idx)
     
     def delete_successor(self, node_idx: int):
+        """
+        Retorna e remove a menor chave da subárvore.
+
+        Processo simétrico ao delete_predecessor:
+            - Desce sempre pelo filho mais à esquerda.
+            - Garante ≥ t chaves antes da descida.
+        """
         t = self.t
         node = self.storage.read_node(t, node_idx)
 
@@ -350,6 +448,15 @@ class BTree:
         return self.delete_successor(child_idx)
     
     def delete_merge(self, parent_idx: int, i: int, j: int) -> int:
+        """
+        Realiza merge de dois irmãos adjacentes.
+
+        Processo:
+            - Desce a chave separadora do pai.
+            - Concatena chaves e filhos do nó direito ao esquerdo.
+            - Remove chave e ponteiro do pai.
+            - Se o pai ficar vazio e for raiz, ajusta nova raiz.
+        """
         t = self.t
 
         parent = self.storage.read_node(t, parent_idx)
@@ -388,6 +495,16 @@ class BTree:
         return left_idx
 
     def delete_sibling(self, parent_idx: int, i: int, j: int):
+        """
+        Redistribui chave entre irmãos (borrow).
+
+        Caso j > i:
+            empresta do irmão direito.
+        Caso j < i:
+            empresta do irmão esquerdo.
+
+        Evita merge quando possível.
+        """
         t = self.t
 
         parent = self.storage.read_node(t, parent_idx)
@@ -432,6 +549,13 @@ class BTree:
         self.storage.write_node(t, sib)
 
     def get(self, chave):
+        """
+        Recupera o valor associado à chave.
+
+        Retorna:
+            valor se encontrado
+            None caso contrário
+        """
         res = self.search(chave)
         if res is None:
             return None
@@ -439,6 +563,12 @@ class BTree:
         return node.registros[i]
 
     def print_tree_levels(self, root_idx: int):
+        """
+        Impressão por níveis (BFS).
+
+        Utiliza fila (deque) para percorrer a árvore por largura,
+        escrevendo cada nível em uma linha separada.
+        """
         def _fmt_node(node) -> str:
             return "[" + ", ".join('key: ' + str(k) for k in node.chaves) + "]"
 

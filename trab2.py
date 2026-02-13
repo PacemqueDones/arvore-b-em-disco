@@ -9,17 +9,15 @@ def main():
     arquivo_entrada = sys.argv[1]
     arquivo_saida = sys.argv[2]
 
-    # lê o valor de d (ordem máxima) e o arquivo com operações
+    # lê o valor de d (ordem máxima) e o arquivo com operações (f)
     d, f = ler_cabecalho(arquivo_entrada)
-    print(f"parametro d: {d}", f"parametro t: {(d + 1) // 2}")
     try:
         # Calcule o grau mínimo (t) como o teto da metade de d.
-        # Isso permite aceitar casos em que o número máximo de filhos (d) é ímpar.
         t_min = (d + 1) // 2
-        # Cria a árvore B com grau mínimo calculado
+        # Cria a árvore B com grau mínimo
         with BTree(path=arquivo_saida, t=t_min, create=True) as arvore:
             executar_operacoes(f, arvore)
-            # Imprime a árvore em níveis para depuração
+            # Imprime a árvore em níveis
             arvore.print_tree_levels(arvore.raiz_idx)
     finally:
             f.close()

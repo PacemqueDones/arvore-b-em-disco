@@ -2,6 +2,17 @@ import struct
 
 class Node:
     def __init__(self, folha=False, idx=None):
+        """
+        Representa um nó da B-tree.
+
+        Estrutura em disco:
+            - folha (bool)
+            - n (número de chaves)
+            - idx (posição no arquivo)
+            - chaves (até 2t - 1)
+            - registros (até 2t - 1)
+            - filhos (até 2t)
+        """
         self.idx = idx
         self.chaves = []  # list[int]
         self.filhos = []  # list[int] posições no arquivo (ou -1)
