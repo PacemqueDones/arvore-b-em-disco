@@ -1,3 +1,15 @@
+# Nome: Anderson Lucas de Paula
+# Matrícula: 2025130753
+
+"""
+Módulo controlador.
+
+Responsável por:
+    - Interpretar arquivo de entrada.
+    - Traduzir operações (I, R, B).
+    - Delegar execução à B-tree.
+"""
+
 def ler_int(linha: str) -> int:
     return int(linha.strip())
 
@@ -15,6 +27,12 @@ def parse_linha_operacao(linha: str):
     return op, args
 
 def ler_cabecalho(caminho_arquivo: str):
+    """
+    Lê primeira linha do arquivo de entrada (valor d).
+
+    Retorna:
+        d, arquivo aberto
+    """
     f = open(caminho_arquivo, "r", encoding="utf-8")
     try:
         d = ler_int(f.readline())
@@ -25,6 +43,14 @@ def ler_cabecalho(caminho_arquivo: str):
 
 
 def executar_operacoes(f, arvore):
+    """
+    Executa sequência de operações descritas no arquivo.
+
+    Operações suportadas:
+        I chave valor  -> inserção
+        R chave        -> remoção
+        B chave        -> busca
+    """
     n = ler_int(f.readline())
 
     operacoes_lidas = 0

@@ -31,9 +31,10 @@ class BTree:
             2. Para um nó com n chaves existem n+1 filhos (se não for folha).
             3. A árvore é split top-down.
         """
-        self.t = t
-    
-        caminho_bin, caminho_txt = preparar_caminhos(path)        
+        
+        caminho_bin, caminho_txt = preparar_caminhos(path)
+
+        self.t = t       
         self.txt = open(caminho_txt, "w", encoding="utf-8")
         self.storage = Storage(caminho_bin, create=create)  # storage abre o arquivo
 
